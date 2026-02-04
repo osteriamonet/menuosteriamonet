@@ -1,0 +1,127 @@
+<script>
+const defaultMenu = {
+    mare: { antipasti: [], primi: [], secondi: [], dolci: [] },
+    terra: { antipasti: [], primi: [], secondi: [], dolci: [] },
+    vini: { bianchi: [], rossi: [], bollicine: [], dolci: [] },
+    cocktail: { classici: [], signature: [], distillati: [] }
+};
+
+const menuContainer = document.getElementById("menu");
+
+// Legge i dati correnti dal localStorage
+function caricaMenu() {
+    try {
+        return JSON.parse(localStorage.getItem("menuData")) || defaultMenu;
+    } catch {
+        return defaultMenu;
+    }
+}
+
+function creaMenu() {
+    const menuData = caricaMenu();
+    const storedIcons = JSON.parse(localStorage.getItem("categoryIcons") || "{}");
+    const storedLabels = JSON.parse(localStorage.getItem("categoryLabels") || "{}");
+    menuContainer.innerHTML = "";
+
+    const categoryIcons = {
+        mare: "🌊",
+        terra: "🌿",
+        vini: "🍷",
+        cocktail: "🍸",
+        ...storedIcons
+    };
+
+    const categoryLabels = {
+        mare: "Menù Mare",
+        terra: "Menù Terra",
+        vini: "Carta dei Vini",
+        cocktail: "Cocktail & Distillati",
+        ...storedLabels
+    };
+
+    const categorie = Object.keys(menuData);
+    if (categorie.length === 0) {
+        const p = document.createElement("p");
+        p.style.textAlign = "center";
+        p.style.color = "#777";
+        p.style.fontStyle = "italic";
+        p.textContent = "Nessun menù salvato. Apri l'editor per crearne uno.";
+        menuContainer.appendChild(p);
+        return;
+    }
+
+    for (let categoria of categorie) {
+        const btn = document.createElement("button");
+        btn.className = "accordion-btn";
+        btn.innerHTML = `${categoryIcons[categoria] ? categoryIcons[categoria] + " " : "📜 "}${categoryLabels[categoria] || categoria}`;
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        const sezioni = Object.keys(menuData[categoria] || {});
+        if (sezioni.length === 0) {
+            const emptyMsg = document.createElement("p");
+            emptyMsg.style.color = "#777";
+            emptyMsg.style.fontStyle = "italic";
+            emptyMsg.style.marginLeft = "10px";
+            emptyMsg.textContent = "Nessuna sottosezione disponibile.";
+            content.appendChild(emptyMsg);
+        } else {
+            for (let sezione of sezioni) {
+                const subBtn = document.createElement("button");
+                subBtn.className = "sub-btn";
+                subBtn.innerText = sezione.charAt(0).toUpperCase() + sezione.slice(1);
+
+                const subContent = document.createElement("div");
+                subContent.className = "content";
+
+                const items = menuData[categoria][sezione] || [];
+                if (items.length === 0) {
+                    const emptyMsg = document.createElement("p");
+                    emptyMsg.style.color = "#777";
+                    emptyMsg.style.fontStyle = "italic";
+                    emptyMsg.textContent = "Nessun elemento inserito";
+                    subContent.appendChild(emptyMsg);
+                } else {
+                    items.forEach(item => {
+                        const div = document.createElement("div");
+                        div.className = "menu-item";
+                        div.innerHTML = `
+                            <div>
+                                <span class="item-name">${item.nome || "Senza nome"}</span>
+                                ${item.descrizione ? `<span class="item-desc">${item.descrizione}</span>` : ""}
+                            </div>
+                            <span class="price">${item.prezzo ? "€" + item.prezzo : ""}</span>
+                        `;
+                        subContent.appendChild(div);
+                    });
+                }
+
+                subBtn.onclick = () => {
+                    subContent.style.display = subContent.style.display === "block" ? "none" : "block";
+                };
+
+                content.appendChild(subBtn);
+                content.appendChild(subContent);
+            }
+        }
+
+        btn.onclick = () => {
+            content.style.display = content.style.display === "block" ? "none" : "block";
+        };
+
+        menuContainer.appendChild(btn);
+        menuContainer.appendChild(content);
+    }
+}
+
+// Primo caricamento
+creaMenu();
+
+// 🔁 Aggiornamento automatico se l’editor salva nuove modifiche
+window.addEventListener("storage", (e) => {
+    if (e.key === "menuData" || e.key === "menuData_lastUpdate") {
+        creaMenu();
+    }
+});
+</script>
